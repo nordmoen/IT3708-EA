@@ -13,7 +13,7 @@ type BitArray = [Bool]
 instance Genome BitArray where
 	fitness     = oneMaxFit
 	crossover   = crossBit
-	mutate      = undefined
+	mutate      = mutateBit
 
 oneMaxFit :: BitArray -> Int
 oneMaxFit = foldr (\b acc -> if b then acc + 1 else acc) 0
@@ -29,3 +29,14 @@ crossBit rate p1 p2 = do
 			return (slice 0 pos p2 ++ (slice pos amount p1) ++ 
 				(slice (pos + amount) (length p2) p2))
 
+mutateBit rate gene = do
+			randGen <- get
+			let amount = floor $ rate * fromIntegral  (length gene)
+			let rands = take amount $ randomRs (0, length gene) randGen
+			let (_, g) = next randGen
+			put g -- Done to ensure that if mutateBit is called twice in a row it will differ
+			return $ foldr mutate' gene rands
+
+mutate' :: Int -> BitArray -> BitArray
+mutate' pos gene = x ++ (not y) : ys
+	where (x, y:ys) = splitAt pos gene
