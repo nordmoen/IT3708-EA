@@ -1,6 +1,6 @@
 {-# LANGUAGE TypeSynonymInstances #-}
 {-# LANGUAGE FlexibleInstances #-}
-module Genome(Genome, oneMaxFit) where
+module Genome(Genome, oneMaxFit, BitArray, fullReplace) where
 
 import Control.Exception(assert)
 import Control.Monad.State
