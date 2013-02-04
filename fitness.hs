@@ -6,6 +6,7 @@ import Control.Monad.State
 import Data.List(sortBy)
 import Data.Ord(comparing)
 import Genome
+import Control.Exception(assert)
 
 --Some handy functions not exported from this module
 totalFitness :: [(a, Int)] -> Double
@@ -20,13 +21,21 @@ stdev pop avg = sqrt (dev / fromIntegral (length pop))
 --END handy functions
 
 --Roulette wheel selection method
+rouletteSelect'' :: Double -> [(a, Double)] -> a
+rouletteSelect'' rand li = fst $ foldr1 (\(i, val) acc -> if val > rand then (i, val) else acc) li
+
 rouletteSelect' :: (RandomGen g, MonadState g m) =>
 	[(a, Double)] -> m a
-rouletteSelect' li = undefined
+rouletteSelect' li = do
+		randgen <- get
+		let (a, g) = random randgen
+		put g
+		return $ rouletteSelect'' a li
 
 rouletteSelect :: (RandomGen g, MonadState g m) =>
 	Int -> [(a, Double)] -> m [a]
-rouletteSelect size li = replicateM size (rouletteSelect' li)
+rouletteSelect size li = replicateM size (rouletteSelect' nLi)
+	where nLi = scanl1 (\(_, acc) (i, val) -> (i, acc + val)) li
 			
 
 --Fitness proportionat selection:
@@ -50,9 +59,22 @@ sigmaScale' :: Int -> Double -> Double -> Double
 sigmaScale' val avg stdev = 1 + ((fromIntegral val - avg) / (2*stdev))
 
 --Tournament selection
+randSelect :: (RandomGen g, MonadState g m) => [a] -> m a
+randSelect li = do
+		randgen <- get
+		let (r, g) = randomR (1, length li) randgen
+		put g
+		return $ li !! (r - 1)
+
 tourSelect' :: (Genome a, RandomGen g, MonadState g m) =>
 	Int -> Double -> [(a, Int)] -> m a
-tourSelect' k s pop = undefined
+tourSelect' k s pop = do
+		randgen <- get
+		randGroup <- replicateM k (randSelect pop)
+		let (x:xs) = reverse $ sortBy (comparing snd) randGroup
+		let (r, g) = random randgen
+		put g
+		return $ if (1.0 - s) > assert (r < 1.0) r then fst x else fst $ head xs
 
 tourSelect :: (Genome a, RandomGen g, MonadState g m) =>
 	Int -> Double -> Int -> [(a, Int)] -> m [a]

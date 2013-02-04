@@ -1,7 +1,8 @@
 {-# LANGUAGE TypeSynonymInstances #-}
 {-# LANGUAGE FlexibleInstances #-}
-module Genome where
+module Genome(Genome, oneMaxFit) where
 
+import Control.Exception(assert)
 import Control.Monad.State
 import System.Random
 
@@ -9,7 +10,7 @@ import System.Random
 
 class Genome a where
     fitness	:: a -> Int
-    crossover   :: (RandomGen g, MonadState g m, RealFrac b) => b -> a -> a -> m a
+    crossover   :: (RandomGen g, MonadState g m, RealFrac b) => b -> a -> a -> m (a, a)
     mutate  	:: (RandomGen g, MonadState g m, RealFrac b) => b -> a -> m a
 
 type BitArray = [Bool]
@@ -26,6 +27,11 @@ slice :: Int -> Int -> [a] -> [a]
 slice from to li = take (to - from) $ drop from li
 
 crossBit rate p1 p2 = do
+		child1 <- crossBit' rate p1 p2
+		child2 <- crossBit' rate p2 p1
+		return $ assert (length child1 == length p1) (child1, child2)
+
+crossBit' rate p1 p2 = do
 		randGen <- get
 		let amount = floor $ rate * fromIntegral  (length p1)
 		let (pos, nGen) = randomR (0, length p1) randGen
