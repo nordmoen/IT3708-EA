@@ -8,7 +8,7 @@ evoLoop :: (Phenotype b a, Genome a) =>
 	[b] -> 			--Population
 	([b] -> IO [b]) -> 	--Selection protocol	
 	Int ->			--Number of rounds
-	Double -> 		--Max fitness
+	Int -> 			--Max fitness
 	IO [b]
 evoLoop !pop !protocol rounds max = do
 	if rounds == 0
@@ -19,12 +19,13 @@ evoLoop !pop !protocol rounds max = do
 	else do
 		putStrLn $ show rounds ++ " left"
 		printStats pop
-		protocol pop
+		next <- protocol pop
+		evoLoop next protocol (rounds - 1) max
 
 printStats :: (Phenotype b a, Genome a) => [b] -> IO ()
 printStats pop = do
 	let b = best pop
 	let avg = average pop
 	let std = stdev avg pop
-	putStrLn $ "Current best: " ++ show b ++ show (fitness pop b)
+	putStrLn $ "Current best: " ++ show b ++ "(Fitness: " ++ show (fitness pop b) ++ ")"
 	putStrLn $ "Average: " ++ show avg ++ "(" ++ show std ++ ")"

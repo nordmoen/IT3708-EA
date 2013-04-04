@@ -20,7 +20,7 @@ rankSelection :: (Phenotype b a) =>
 rankSelection min max amount population = do
 	rands <- replicateM amount randomIO :: IO [Double]
 	rands2 <- replicateM amount randomIO :: IO [Double]
-	return $ concat [[(wheel a, wheel b) | a <- rands] | b <- rands2]
+	return $ foldr (\(r1, r2) acc -> (wheel r1, wheel r2) : acc) [] (zip rands rands2)
 		where 	sorted = sortBy (fit population) population
 			size = fromIntegral $ length population - 1
 			calc = [min + (max - min)*((i - 1)/size) | i <- [0..]]
@@ -54,7 +54,8 @@ fullGenerational :: (Phenotype b a, Genome a) =>
 	[b] -> --Population to select from
 	IO [b] --The new population created
 fullGenerational selection e amount cross mute pop = do
-	parents <- selection amount pop
+	let a = ceiling (fromIntegral amount / 2.0)
+	parents <- selection a pop
 	--next <- breed parents cross mute
 	let breed' = breed cross mute
 	next <- foldrM breed' [] parents

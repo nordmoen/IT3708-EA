@@ -4,4 +4,6 @@ import Config
 import Evolution
 
 main = do
-	evoLoop initial protocol rounds maxFitness
+	putStrLn "Starting Evolution"
+	init <- initial
+	evoLoop init protocol rounds maxFitness

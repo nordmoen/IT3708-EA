@@ -8,19 +8,18 @@ import Control.Monad(replicateM)
 import System.Random(randomIO)
 import Data.Foldable(foldrM)
 
-type Bitarray = [Bool]
+type BitArray = [Bool]
 
-instance Genome Bitarray where
+instance Genome BitArray where
 	crossover = oneC
 	mutate = muteC
-	develop = id
-	createPop bits size = replicateM size $ replicateM bits randomIO :: IO [Bitarray]
 
-instance Phenotype Bitarray Bitarray where
+instance Phenotype BitArray BitArray where
 	fitness pop a = foldr (\n acc -> if n then acc + 1 else acc) 0 a
 	genome a = a
+	develop = id
 
-oneC :: Double -> Bitarray -> Bitarray -> IO (Bitarray, Bitarray)
+oneC :: Double -> BitArray -> BitArray -> IO (BitArray, BitArray)
 oneC rate a b = do
 	r1 <- randomIO :: IO Double
 	r2 <- randomIO :: IO Double
@@ -29,8 +28,11 @@ oneC rate a b = do
 	let b1 = if r2 < rate then drop len a ++ take len a else b
 	return (a1, b1)
 
-muteC :: Double -> Bitarray -> IO Bitarray
+muteC :: Double -> BitArray -> IO BitArray
 muteC rate a = foldrM (\n acc -> do
 	r <- randomIO :: IO Double
 	let nn = if r < rate then not n else n
 	return $ nn : acc) [] a
+
+createBitArrayPop :: Int -> Int -> IO [BitArray]
+createBitArrayPop bits size = replicateM size $ replicateM bits randomIO :: IO [BitArray]

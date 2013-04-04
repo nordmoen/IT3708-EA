@@ -9,13 +9,12 @@ import Data.List(maximumBy)
 class (Eq a, Show a) => Genome a where
 	crossover	:: Double -> a -> a -> IO (a, a)
 	mutate		:: Double -> a -> IO a
-	develop		:: (Phenotype b a)  => a -> b
-	createPop	:: Int -> Int -> IO [a]
 
 class (Eq a, Show a, Genome b) => Phenotype a b | a -> b where
 	--In case of Coevolution where each phenotype needs to be compared to every other in the population
 	fitness		:: [a] -> a -> Int 
 	genome		:: a -> b
+	develop		:: b -> a
 
 -- | Return the best individual in the population
 best :: (Phenotype b a, Genome a) => [b] -> b
