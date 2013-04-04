@@ -24,12 +24,16 @@ rankSelection min max amount population = do
 		where 	sorted = sortBy (fit population) population
 			size = fromIntegral $ length population - 1
 			calc = [min + (max - min)*((i - 1)/size) | i <- [0..]]
-			norm = zip sorted calc
+			norm = normalized $ zip sorted calc
 			wheel = rouletteSelection norm
 
 -- |Rank selection initialized with the most commonly used min and max values
 defaultRank :: (Phenotype b a) => Int -> [b] -> IO [(b, b)]
 defaultRank = rankSelection 0.5 1.5
+
+normalized :: [(a, Double)] -> [(a, Double)]
+normalized list = map (\(a, val) -> (a, val / fact)) list
+	where fact = foldr (\(_, val) acc -> val + acc) 0 list
 
 --Helper method used in rank and full generational replacement
 fit pop f s = fitness pop f `compare` fitness pop s

@@ -20,7 +20,14 @@ evoLoop !pop !protocol rounds max = do
 		putStrLn $ show rounds ++ " left"
 		printStats pop
 		next <- protocol pop
-		evoLoop next protocol (rounds - 1) max
+		let b = fitness next (best next)
+		if max >= 0 && b >= max
+		then do
+			putStrLn $ "Reach the max fitness(" ++ show max ++ ")"
+			putStrLn "Best fit individual:"
+			putStrLn $ "\t" ++ show (best next)
+			return next
+		else evoLoop next protocol (rounds - 1) max
 
 printStats :: (Phenotype b a, Genome a) => [b] -> IO ()
 printStats pop = do
