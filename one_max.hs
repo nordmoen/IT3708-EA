@@ -15,7 +15,7 @@ instance Genome BitArray where
 	mutate = muteC
 
 instance Phenotype BitArray BitArray where
-	fitness pop a = foldr (\n acc -> if n then acc + 1 else acc) 0 a
+	fitness pop = foldr (\n acc -> if n then acc + 1 else acc) 0
 	genome a = a
 	develop = id
 
@@ -29,10 +29,10 @@ oneC rate a b = do
 	return (a1, b1)
 
 muteC :: Double -> BitArray -> IO BitArray
-muteC rate a = foldrM (\n acc -> do
+muteC rate = foldrM (\n acc -> do
 	r <- randomIO :: IO Double
 	let nn = if r < rate then not n else n
-	return $ nn : acc) [] a
+	return $ nn : acc) []
 
 createBitArrayPop :: Int -> Int -> IO [BitArray]
 createBitArrayPop bits size = replicateM size $ replicateM bits randomIO :: IO [BitArray]
