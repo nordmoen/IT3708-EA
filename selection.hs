@@ -27,14 +27,14 @@ rankSelection :: (Phenotype b a) =>
 	Double -> 	--The minimum value for the rank selection, range: [0, 1]
 	Double -> 	--The maximum value for the rank selection, range: [1, 2]
 	[(b, Int)] -> 	--The population to select individuals from, the Integer is the fitness
-	[(b, Double)]
-rankSelection min max population = normalized $ zip sorted calc
+	IO [(b, Double)]
+rankSelection min max population = return $ normalized (zip sorted calc)
 	where 	sorted = map fst $ sortBy fit population
 		size = fromIntegral $ length population - 1
 		calc = [min + (max - min)*((i - 1)/size) | i <- [0..]]
 
 -- |Rank selection initialized with the most commonly used min and max values
-defaultRank :: (Phenotype b a) => [(b, Int)] -> [(b, Double)]
+defaultRank :: (Phenotype b a) => [(b, Int)] -> IO [(b, Double)]
 defaultRank = rankSelection 0.5 1.5
 
 normalized :: [(a, Double)] -> [(a, Double)]
@@ -56,7 +56,7 @@ rouletteSelection = rouletteSelection' 0
 
 -- |Full generational replacement selection protocol
 fullGenerational :: (Phenotype b a, Genome a) =>
-	([(b, Int)] -> [(b, Double)]) -> --Selection mechanism
+	([(b, Int)] -> IO [(b, Double)]) -> --Selection mechanism
 	Int -> --Elitism
 	Int -> --The number of children to create
 	Double -> --Crossover rate
@@ -67,7 +67,8 @@ fullGenerational select e amount cross mute pop = do
 	let a = ceiling (fromIntegral amount / 2.0)
 	let fitPop = map (\n -> (n, fitness pop n)) pop
   	let reverseSorted = (reverse . map fst) $ sortBy fit fitPop
-	parents <- selection a $ select fitPop
+	norm <- select fitPop
+	parents <- selection a norm
 	--next <- breed parents cross mute
 	let breed' = breed cross mute
 	next <- foldrM breed' [] parents

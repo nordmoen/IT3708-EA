@@ -11,7 +11,7 @@ bits		= 40
 seed		= 42  :: Int
 rounds		= 100 :: Int
 maxFitness	= bits
-selectionM :: [(BitArray, Int)] -> [(BitArray, Double)]
+selectionM :: [(BitArray, Int)] -> IO [(BitArray, Double)]
 selectionM	= defaultRank
 protocol :: [BitArray] -> IO [BitArray]
 protocol	= fullGenerational selectionM elitism size crossover mutation
