@@ -1,4 +1,5 @@
-module Selection(rankSelection, defaultRank, fullGenerational) where
+module Selection(rankSelection, defaultRank, fullGenerational, selection,
+rouletteSelection) where
 
 --Global imports
 import Data.Foldable(foldrM)
@@ -10,25 +11,30 @@ import EA
 
 --Code and values based on http://www.idi.ntnu.no/emner/it3708/lectures/notes/ea-selection.pdf
 
--- |Rank selection mechanism
-rankSelection :: (Phenotype b a) =>
-	Double -> --The minimum value for the rank selection, range: [0, 1]
-	Double -> --The maximum value for the rank selection, range: [1, 2]
-	Int -> 	--The number of couples to select
-	[b] -> 	--The population to select individuals from
-	IO [(b, b)] --Since the selection is dependant on randomness this must be within a monad
-rankSelection min max amount population = do
-	rands <- replicateM amount randomIO :: IO [Double]
+-- | General selection method, it uses a list of Phenotypes with their normalized fitness to
+-- select the amount of parents wanted
+selection :: (Phenotype b a) =>
+	Int -> 			--The number of couples to select
+	[(b, Double)] -> 	--The population to select individuals from
+	IO [(b, b)] 		--Since the selection is dependant on randomness this must be within a monad
+selection amount population = do
+	rands  <- replicateM amount randomIO :: IO [Double]
 	rands2 <- replicateM amount randomIO :: IO [Double]
 	return $ foldr (\(r1, r2) acc -> (wheel r1, wheel r2) : acc) [] (zip rands rands2)
-		where 	sorted = sortBy (fit population) population
-			size = fromIntegral $ length population - 1
-			calc = [min + (max - min)*((i - 1)/size) | i <- [0..]]
-			norm = normalized $ zip sorted calc
-			wheel = rouletteSelection norm
+		where wheel = rouletteSelection population
+
+rankSelection :: (Phenotype b a) =>
+	Double -> 	--The minimum value for the rank selection, range: [0, 1]
+	Double -> 	--The maximum value for the rank selection, range: [1, 2]
+	[(b, Int)] -> 	--The population to select individuals from, the Integer is the fitness
+	[(b, Double)]
+rankSelection min max population = normalized $ zip sorted calc
+	where 	sorted = map fst $ sortBy fit population
+		size = fromIntegral $ length population - 1
+		calc = [min + (max - min)*((i - 1)/size) | i <- [0..]]
 
 -- |Rank selection initialized with the most commonly used min and max values
-defaultRank :: (Phenotype b a) => Int -> [b] -> IO [(b, b)]
+defaultRank :: (Phenotype b a) => [(b, Int)] -> [(b, Double)]
 defaultRank = rankSelection 0.5 1.5
 
 normalized :: [(a, Double)] -> [(a, Double)]
@@ -36,7 +42,7 @@ normalized list = map (\(a, val) -> (a, val / fact)) list
 	where fact = foldr (\(_, val) acc -> val + acc) 0 list
 
 --Helper method used in rank and full generational replacement
-fit pop f s = fitness pop f `compare` fitness pop s
+fit (_, f) (_, s) = f `compare` s
 
 rouletteSelection' :: Double -> [(a, Double)] -> Double -> a
 rouletteSelection' _ (x:[]) _ = fst x --X is last element, must pick x
@@ -50,21 +56,22 @@ rouletteSelection = rouletteSelection' 0
 
 -- |Full generational replacement selection protocol
 fullGenerational :: (Phenotype b a, Genome a) =>
-	(Int -> [b] -> IO [(b, b)]) -> --Selection mechanism
+	([(b, Int)] -> [(b, Double)]) -> --Selection mechanism
 	Int -> --Elitism
 	Int -> --The number of children to create
 	Double -> --Crossover rate
 	Double -> --Mutation rate
 	[b] -> --Population to select from
 	IO [b] --The new population created
-fullGenerational selection e amount cross mute pop = do
+fullGenerational select e amount cross mute pop = do
 	let a = ceiling (fromIntegral amount / 2.0)
-	parents <- selection a pop
+	let fitPop = map (\n -> (n, fitness pop n)) pop
+  	let reverseSorted = (reverse . map fst) $ sortBy fit fitPop
+	parents <- selection a $ select fitPop
 	--next <- breed parents cross mute
 	let breed' = breed cross mute
 	next <- foldrM breed' [] parents
 	return $ drop e next ++ take e reverseSorted
-		where reverseSorted = reverse $ sortBy (fit pop) pop
 
 breed :: (Phenotype b a, Genome a) => Double -> Double -> (b, b) -> [b] -> IO [b]
 breed cross mute (dad, mom) acc = do

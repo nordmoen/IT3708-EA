@@ -8,10 +8,11 @@ mutation	= 1.0 / fromIntegral bits
 elitism		= 3
 size		= 10
 bits		= 40
+seed		= 42  :: Int
 rounds		= 100 :: Int
 maxFitness	= bits
-selection :: Int -> [BitArray] -> IO [(BitArray, BitArray)]
-selection	= defaultRank
+selectionM :: [(BitArray, Int)] -> [(BitArray, Double)]
+selectionM	= defaultRank
 protocol :: [BitArray] -> IO [BitArray]
-protocol	= fullGenerational selection elitism size crossover mutation
+protocol	= fullGenerational selectionM elitism size crossover mutation
 initial		= createBitArrayPop bits size
