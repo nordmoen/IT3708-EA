@@ -13,19 +13,23 @@ evoLoop :: (Phenotype b a, Genome a) =>
 evoLoop !pop !protocol rounds max = do
 	if rounds == 0
 	then do 
-		putStrLn "Done"
+		putStrLn $ replicate nLines '-'
 		printStats pop
 		return pop
 	else do
+		putStrLn $ replicate nLines '-'
 		putStrLn $ show rounds ++ " left"
 		printStats pop
+		putStrLn $ replicate nLines '-'
 		next <- protocol pop
 		let b = fitness next (best next)
 		if max >= 0 && b >= max
 		then do
+			putStrLn $ replicate nLines '-'
 			putStrLn $ "Reach the max fitness(" ++ show max ++ ")"
 			putStrLn "Best fit individual:"
 			putStrLn $ "\t" ++ show (best next)
+			putStrLn $ replicate nLines '-'
 			return next
 		else evoLoop next protocol (rounds - 1) max
 
@@ -36,3 +40,5 @@ printStats pop = do
 	let std = stdev avg pop
 	putStrLn $ "Current best: " ++ show b ++ "(Fitness: " ++ show (fitness pop b) ++ ")"
 	putStrLn $ "Average: " ++ show avg ++ "(" ++ show std ++ ")"
+
+nLines = 80 :: Int

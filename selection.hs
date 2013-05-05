@@ -4,8 +4,9 @@ rouletteSelection) where
 --Global imports
 import Data.Foldable(foldrM)
 import Data.List(sortBy)
-import Control.Monad(replicateM, liftM)
+import Control.Monad(replicateM)
 import System.Random(randomIO)
+import Control.Parallel.Strategies(parMap, rseq)
 --Local imports
 import EA
 
@@ -28,10 +29,10 @@ rankSelection :: (Phenotype b a) =>
 	Double -> 	--The maximum value for the rank selection, range: [1, 2]
 	[(b, Int)] -> 	--The population to select individuals from, the Integer is the fitness
 	IO [(b, Double)]
-rankSelection min max population = return $ normalized (zip sorted calc)
+rankSelection minV maxV population = return $ normalized (zip sorted calc)
 	where 	sorted = map fst $ sortBy fit population
 		size = fromIntegral $ length population - 1
-		calc = [min + (max - min)*((i - 1)/size) | i <- [0..]]
+		calc = [minV + (maxV - minV)*((i - 1)/size) | i <- [0..]]
 
 -- |Rank selection initialized with the most commonly used min and max values
 defaultRank :: (Phenotype b a) => [(b, Int)] -> IO [(b, Double)]
@@ -65,7 +66,7 @@ fullGenerational :: (Phenotype b a, Genome a) =>
 	IO [b] --The new population created
 fullGenerational select e amount cross mute pop = do
 	let a = ceiling (fromIntegral amount / 2.0)
-	let fitPop = map (\n -> (n, fitness pop n)) pop
+	let fitPop = parMap rseq (\n -> (n, fitness pop n)) pop
   	let reverseSorted = (reverse . map fst) $ sortBy fit fitPop
 	norm <- select fitPop
 	parents <- selection a norm
@@ -74,7 +75,8 @@ fullGenerational select e amount cross mute pop = do
 	next <- foldrM breed' [] parents
 	return $ drop e next ++ take e reverseSorted
 
-breed :: (Phenotype b a, Genome a) => Double -> Double -> (b, b) -> [b] -> IO [b]
+breed :: (Phenotype b a, Genome a) => 
+	Double -> Double -> (b, b) -> [b] -> IO [b]
 breed cross mute (dad, mom) acc = do
 	(childA, childB) <- crossover cross (genome dad) (genome mom)
 	childAMute <- mutate mute childA

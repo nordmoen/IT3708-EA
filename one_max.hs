@@ -11,16 +11,16 @@ import Data.Foldable(foldrM)
 type BitArray = [Bool]
 
 instance Genome BitArray where
-	crossover = oneC
-	mutate = muteC
+	crossover = bitArrayC
+	mutate = bitArrayM
 
 instance Phenotype BitArray BitArray where
-	fitness pop = foldr (\n acc -> if n then acc + 1 else acc) 0
-	genome a = a
+	fitness _ = foldr (\n acc -> if n then acc + 1 else acc) 0
+	genome 	= id
 	develop = id
 
-oneC :: Double -> BitArray -> BitArray -> IO (BitArray, BitArray)
-oneC rate a b = do
+bitArrayC :: Double -> BitArray -> BitArray -> IO (BitArray, BitArray)
+bitArrayC rate a b = do
 	r1 <- randomIO :: IO Double
 	r2 <- randomIO :: IO Double
 	let len = floor $ fromIntegral (length a) / 2.0
@@ -28,8 +28,8 @@ oneC rate a b = do
 	let b1 = if r2 < rate then drop len a ++ take len a else b
 	return (a1, b1)
 
-muteC :: Double -> BitArray -> IO BitArray
-muteC rate = foldrM (\n acc -> do
+bitArrayM :: Double -> BitArray -> IO BitArray
+bitArrayM rate = foldrM (\n acc -> do
 	r <- randomIO :: IO Double
 	let nn = if r < rate then not n else n
 	return $ nn : acc) []
